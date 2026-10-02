@@ -15,6 +15,8 @@ const routes = [
   { path: '/catatan', name: 'catatan', component: () => import('../views/CatatanView.vue'), meta: { requiresAuth: true } },
   { path: '/aktivitas', name: 'aktivitas', component: () => import('../views/AktivitasView.vue'), meta: { requiresAuth: true } },
   { path: '/goals', name: 'goals', component: () => import('../views/GoalsView.vue'), meta: { requiresAuth: true } },
+  // ---> Rute /about dibuat publik (tidak pakai requiresAuth) <---
+  { path: '/about', name: 'about', component: () => import('../views/AboutView.vue') },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../views/NotFoundView.vue') },
 ]
 

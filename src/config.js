@@ -1,67 +1,73 @@
 // src/config.js
-// Pengganti APP_CONFIG di assets/js/config.js versi lama.
-// Versi dinaikkan ke v2.0.0 karena ini migrasi total ke Vue 3 + Vite
-// (bukan sekadar patch kecil), jadi pantas nya major version bump.
-
 export const APP_CONFIG = {
   appName: 'Catatan Keuangan',
-  version: 'v2.1',
-  releaseDate: '26 Sep 2026',
+  version: 'v2.2',
+  releaseDate: '2 Okt 2026',
   developer: 'Zaki Nur Faizi',
   year: '2026',
   
   // Riwayat Pembaruan / Changelog Aplikasi
   changelog: [
     {
+      version: "v2.2",
+      date: "2 Oktober 2026",
+      features: [
+        "Menambahkan Halaman Tentang aplikasi website ini dan style yang berbeda sedikit di halaman tentang aplikasinya",
+      ],
+      bugs: [
+        "Memperbaiki kendala pada router index.js dan layoutnya",
+        "Memperbaiki di halaman about tombol kembalinya",
+      ]
+    },
+    {
       version: "v2.1",
       date: "26 September 2026",
       features: [
-        "Menambahkan fitur notifikasi untuk pengingat nyatat keuangan",
-        "Menambahkan fitur cegah user hapus tabungan sendiri",
-        "Meng update fitur tabungan dengan fitur edit dan hapus juga",
+        "Menambahkan fitur notifikasi pengingat otomatis agar tidak lupa mencatat keuangan harian",
+        "Menambahkan pengaman agar tabungan pribadi tidak bisa terhapus secara tidak sengaja",
+        "Menambahkan tombol dan fitur untuk mengedit serta menghapus data tabungan dengan lebih mudah"
       ],
       bugs: [
-        "perbaikan fitur tabungan yang tadinya tidak bisa dihapus sekarang bisa dan ada tombol untuk mengedit",
-        "di fitur notifikasi sebelumnya, tidak bisa di klik tombolnya",
-        "Memperbaiki fitur sebelumnya",
-        "Memperbaiki app nya, karna bug",
-        "Memperbaiki di main js nya bug route",
+        "Memperbaiki kendala pada fitur tabungan yang sebelumnya tidak bisa dihapus dan ditambahkan tombol edit",
+        "Memperbaiki tombol pada fitur notifikasi agar bisa diklik dengan normal",
+        "Peningkatan kestabilan aplikasi secara keseluruhan",
+        "Memperbaiki kendala teknis pada sistem navigasi halaman"
       ]
     },
     {
       version: "v2.0",
-      date: "24 September 2026",
+      date: "25 September 2026",
       features: [
-        "Migrasi total dari HTML/Vanilla JS ke Vue 3 (Composition API + <script setup>) + Vite",
-        "Menambahkan fitur Web Push Notification pengingat keuangan otomatis 4x sehari",
-        "Mengganti Bootstrap JS & SweetAlert2 dengan komponen Vue mandiri (AppModal, ToastStack)",
-        "Mengoptimalkan performa manajemen state reaktif untuk data transaksi, budget, dan goals"
+        "Pembaruan total tampilan aplikasi menjadi jauh lebih modern, cepat, dan responsif",
+        "Menambahkan pengingat notifikasi otomatis langsung ke perangkat hingga 4 kali sehari",
+        "Memperbarui tampilan jendela popup dan pesan notifikasi agar lebih nyaman dilihat",
+        "Mengoptimalkan kecepatan pengelolaan data transaksi, anggaran, dan target tabungan"
       ],
       bugs: [
-        "Memperbaiki kendala izin browser dan Service Worker pada fitur notifikasi native",
-        "Membersihkan dependensi ganda yang tidak terpakai dari versi sebelumnya"
+        "Memperbaiki izin akses notifikasi di browser agar bisa berjalan dengan lancar",
+        "Membersihkan berkas aplikasi yang tidak terpakai agar performa jauh lebih ringan"
       ]
     },
     {
-      version: "v1.1.5",
+      version: "v1.1",
       date: "24 September 2026",
       features: [
-        "Penyempurnaan logika Supabase RPC untuk proses tabungan dan tarik dana goals",
-        "Menjaga aturan desain riwayat transaksi agar tidak bisa dihapus dari UI demi keamanan data"
+        "Penyempurnaan sistem perhitungan penyimpanan tabungan dan penarikan dana target",
+        "Menjaga riwayat transaksi agar tetap aman dan tidak dapat dihapus sembarangan demi keamanan data keuangan"
       ],
       bugs: [
-        "Memperbaiki perhitungan saldo total all-time yang sempat selisih dengan transaksi bulan berjalan"
+        "Memperbaiki selisih perhitungan total saldo keseluruhan dengan transaksi di bulan berjalan"
       ]
     },
     {
       version: "v1.0",
       date: "Awal Pengembangan",
       features: [
-        "Merilis platform awal Catatan Keuangan berbasis Web",
-        "Menambahkan menu Beranda, Catatan Transaksi, Target Goals, dan pengaturan Budget bulanan"
+        "Peluncuran perdana aplikasi Catatan Keuangan berbasis web",
+        "Menghadirkan menu Beranda, Catatan Transaksi, Target Tabungan, dan Pengaturan Anggaran Bulanan"
       ],
       bugs: [
-        "Inisialisasi struktur database awal di Supabase"
+        "Pengaturan awal basis data penyimpanan akun pengguna"
       ]
     }
   ]

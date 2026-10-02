@@ -12,11 +12,14 @@
           <strong>{{ config.appName }} {{ config.version }}</strong><br />
           Dikembangkan oleh {{ config.developer }}<br />
           &copy; {{ config.year }} All Rights Reserved
+          <div class="footer-link-wrapper">
+            <RouterLink to="/about" class="about-link">Tentang Aplikasi & Update</RouterLink>
+          </div>
         </div>
       </div>
 
       <div class="auth-form-panel">
-        <div class="auth-brand">Buat Akun Baru ✨</div>
+        <div class="auth-brand">Buat Akun Baru </div>
         <div class="auth-sub">Isi data di bawah untuk mendaftar</div>
 
         <div v-if="errorMsg" class="alert-box error">{{ errorMsg }}</div>
@@ -48,6 +51,9 @@
 
         <div class="mobile-footer-info">
           {{ config.appName }} <strong>{{ config.version }}</strong> &bull; &copy; {{ config.year }} {{ config.developer }}
+          <div class="mobile-footer-link">
+            <RouterLink to="/about">Tentang Aplikasi & Update</RouterLink>
+          </div>
         </div>
       </div>
     </div>
@@ -155,6 +161,22 @@ async function handleSubmit() {
   line-height: 1.4;
 }
 
+.footer-link-wrapper {
+  margin-top: 8px;
+}
+
+.about-link {
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 0.8rem;
+  transition: opacity 0.2s;
+}
+
+.about-link:hover {
+  opacity: 0.8;
+}
+
 .auth-form-panel {
   flex: 1;
   padding: 44px;
@@ -205,6 +227,21 @@ async function handleSubmit() {
   color: #a0a0a0;
   margin-top: 20px;
   line-height: 1.4;
+}
+
+.mobile-footer-link {
+  margin-top: 6px;
+}
+
+.mobile-footer-link a {
+  color: var(--color-auth, #7c3aed);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+
+.mobile-footer-link a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 767px) {
