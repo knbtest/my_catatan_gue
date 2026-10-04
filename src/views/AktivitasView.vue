@@ -15,18 +15,14 @@
       <div class="list-wrapper">
         <PageLoader v-if="isLoading" text="Memuat data transaksi..." />
 
-        <div v-else-if="listAktivitas.length === 0" class="empty-note">
-          Belum ada transaksi di bulan ini.
-        </div>
+        <div v-else-if="listAktivitas.length === 0" class="empty-note">Belum ada transaksi di bulan ini.</div>
 
         <div v-else class="aktivitas-item" v-for="item in listAktivitas" :key="item.id">
           <div class="item-left">
             <div class="item-title">{{ item.deskripsi }}</div>
             <div class="item-time">{{ formatTanggalJam(item.created_at) }}</div>
           </div>
-          <div class="item-price" :class="item.tipe === 'pemasukan' ? 'masuk' : 'keluar'">
-            {{ item.tipe === 'pemasukan' ? '+' : '-' }}{{ formatRupiah(item.jumlah) }}
-          </div>
+          <div class="item-price" :class="item.tipe === 'pemasukan' ? 'masuk' : 'keluar'">{{ item.tipe === "pemasukan" ? "+" : "-" }}{{ formatRupiah(item.jumlah) }}</div>
         </div>
       </div>
     </div>
@@ -38,6 +34,22 @@
           <label :class="modalTipe === 'pemasukan' ? 'text-success' : 'text-danger'">Deskripsi</label>
           <input v-model="formDeskripsi" type="text" required :placeholder="modalTipe === 'pemasukan' ? 'Contoh: Gajihan...' : 'Contoh: Beli Mie...'" />
         </div>
+
+        <!-- Pemasukan: nama bank/dana bebas, auto-buat card kalau baru -->
+        <div class="field" v-if="modalTipe === 'pemasukan'">
+          <label class="text-success">Nama Bank / Dana</label>
+          <ComboBox v-model="formNamaDana" :options="namaDanaOptions" placeholder="Contoh: Uang Saku/Bank" />
+        </div>
+
+        <!-- Pengeluaran: wajib pilih dana yang sudah ada -->
+        <div class="field" v-else>
+          <label class="text-danger">Sumber Dana</label>
+          <select v-model="formDanaId" required>
+            <option value="" disabled>Pilih sumber dana</option>
+            <option v-for="d in danaList" :key="d.id" :value="d.id">{{ d.nama }} (Rp {{ d.saldo.toLocaleString("id-ID") }})</option>
+          </select>
+        </div>
+
         <div class="field">
           <label :class="modalTipe === 'pemasukan' ? 'text-success' : 'text-danger'">Jumlah</label>
           <div class="input-prefix">
@@ -45,14 +57,9 @@
             <input :value="formJumlahTampil" @input="onJumlahInput" type="text" inputmode="numeric" autocomplete="off" placeholder="0" required />
           </div>
         </div>
-        <button
-          type="submit"
-          class="btn btn-block"
-          :class="modalTipe === 'pemasukan' ? 'btn-success' : 'btn-danger'"
-          :disabled="isSubmitting"
-        >
+        <button type="submit" class="btn btn-block" :class="modalTipe === 'pemasukan' ? 'btn-success' : 'btn-danger'" :disabled="isSubmitting">
           <BaseSpinner v-if="isSubmitting" />
-          {{ isSubmitting ? 'Memproses...' : 'Simpan' }}
+          {{ isSubmitting ? "Memproses..." : "Simpan" }}
         </button>
       </form>
     </AppModal>
@@ -60,117 +67,118 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../composables/useAuth'
-import { useToast } from '../composables/useToast'
-import { formatRupiah, formatTanggalJam, getRentangBulanIni, parseAngkaFormat, formatRibuan } from '../utils/format'
-import AppLayout from '../components/AppLayout.vue'
-import AppModal from '../components/AppModal.vue'
-import PageLoader from '../components/PageLoader.vue'
-import BaseSpinner from '../components/BaseSpinner.vue'
+import { ref, computed, onMounted } from "vue";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../composables/useAuth";
+import { useToast } from "../composables/useToast";
+import { useSumberDana } from "../composables/useSumberDana";
+import { formatRupiah, formatTanggalJam, getRentangBulanIni, parseAngkaFormat, formatRibuan } from "../utils/format";
+import AppLayout from "../components/AppLayout.vue";
+import AppModal from "../components/AppModal.vue";
+import PageLoader from "../components/PageLoader.vue";
+import BaseSpinner from "../components/BaseSpinner.vue";
+import ComboBox from "../components/ComboBox.vue";
 
-const { user } = useAuth()
-const { showToast } = useToast()
+const { user } = useAuth();
+const { showToast } = useToast();
+const { danaList, fetchDana, tambahPemasukan, tambahPengeluaran } = useSumberDana();
+const namaDanaOptions = computed(() => danaList.value.map((d) => d.nama));
 
-const isLoading = ref(true)
-const listAktivitas = ref([])
+const isLoading = ref(true);
+const listAktivitas = ref([]);
 
-const showModal = ref(false)
-const modalTipe = ref('pemasukan') // 'pemasukan' | 'pengeluaran'
-const formDeskripsi = ref('')
-const formJumlahTampil = ref('') // versi terformat "1.000.000" buat ditampilkan
-const formJumlahAngka = ref(0) // versi angka murni buat dikirim ke Supabase
-const isSubmitting = ref(false)
+const showModal = ref(false);
+const modalTipe = ref("pemasukan"); // 'pemasukan' | 'pengeluaran'
+const formDeskripsi = ref("");
+const formNamaDana = ref(""); // dipakai saat pemasukan
+const formDanaId = ref(""); // dipakai saat pengeluaran
+const formJumlahTampil = ref(""); // versi terformat "1.000.000" buat ditampilkan
+const formJumlahAngka = ref(0); // versi angka murni buat dikirim ke Supabase
+const isSubmitting = ref(false);
 
 /** Sama seperti muatData() di aktivitas.js lama */
 async function muatData() {
-  isLoading.value = true
+  isLoading.value = true;
 
-  const { awal, akhir } = getRentangBulanIni()
-  const { data, error } = await supabase
-    .from('transaksi')
-    .select('*')
-    .eq('user_id', user.value.id)
-    .gte('created_at', awal)
-    .lt('created_at', akhir)
-    .order('created_at', { ascending: false })
+  const { awal, akhir } = getRentangBulanIni();
+  const { data, error } = await supabase.from("transaksi").select("*").eq("user_id", user.value.id).gte("created_at", awal).lt("created_at", akhir).order("created_at", { ascending: false });
 
   if (error) {
-    console.error('Gagal memuat data transaksi:', error.message)
-    showToast({ type: 'error', title: 'Gagal memuat data', text: error.message })
-    isLoading.value = false
-    return
+    console.error("Gagal memuat data transaksi:", error.message);
+    showToast({ type: "error", title: "Gagal memuat data", text: error.message });
+    isLoading.value = false;
+    return;
   }
 
-  listAktivitas.value = data || []
-  isLoading.value = false
-}
-
-/** Sama seperti hitungSaldo() di aktivitas.js lama (dipakai buat validasi pengeluaran) */
-async function hitungSaldo() {
-  const { data, error } = await supabase.from('transaksi').select('tipe, jumlah').eq('user_id', user.value.id)
-  if (error) throw error
-  return (data || []).reduce((total, t) => (t.tipe === 'pemasukan' ? total + t.jumlah : total - t.jumlah), 0)
+  listAktivitas.value = data || [];
+  isLoading.value = false;
 }
 
 function bukaModal(tipe) {
-  modalTipe.value = tipe
-  formDeskripsi.value = ''
-  formJumlahTampil.value = ''
-  formJumlahAngka.value = 0
-  showModal.value = true
+  modalTipe.value = tipe;
+  formDeskripsi.value = "";
+  formNamaDana.value = "";
+  formDanaId.value = "";
+  formJumlahTampil.value = "";
+  formJumlahAngka.value = 0;
+  showModal.value = true;
 }
 
 /** Live-format input nominal jadi "1.000.000" sambil ketik, mirip pasangFormatRibuan() lama */
 function onJumlahInput(e) {
-  const angka = parseAngkaFormat(e.target.value)
-  formJumlahAngka.value = angka
-  formJumlahTampil.value = angka ? formatRibuan(angka) : ''
+  const angka = parseAngkaFormat(e.target.value);
+  formJumlahAngka.value = angka;
+  formJumlahTampil.value = angka ? formatRibuan(angka) : "";
 }
 
+/** Pemasukan & pengeluaran sekarang lewat RPC (catat_pemasukan / catat_pengeluaran)
+ *  biar saldo per sumber dana ikut ter-update atomic di server. Validasi saldo
+ *  cukup/tidaknya untuk pengeluaran juga dicek di server (lihat SQL v2.3). */
 async function handleSubmit() {
-  const jumlah = formJumlahAngka.value
-  const deskripsi = formDeskripsi.value.trim()
+  const jumlah = formJumlahAngka.value;
+  const deskripsi = formDeskripsi.value.trim();
 
   if (!jumlah || jumlah <= 0 || !deskripsi) {
-    showToast({ type: 'warning', title: 'Input Belum Lengkap', text: 'Mohon isi deskripsi dan jumlah uang dengan benar ya!' })
-    return
+    showToast({ type: "warning", title: "Input Belum Lengkap", text: "Mohon isi deskripsi dan jumlah uang dengan benar ya!" });
+    return;
   }
 
-  isSubmitting.value = true
+  let error = null;
 
-  try {
-    if (modalTipe.value === 'pengeluaran') {
-      const saldoSaatIni = await hitungSaldo()
-      if (jumlah > saldoSaatIni) {
-        showToast({
-          type: 'error',
-          title: 'Saldo Tidak Cukup',
-          text: `Saldo kamu saat ini ${formatRupiah(saldoSaatIni)}, tidak cukup untuk pengeluaran ${formatRupiah(jumlah)}.`,
-        })
-        return
-      }
+  if (modalTipe.value === "pemasukan") {
+    const nama = formNamaDana.value.trim();
+    if (!nama) {
+      showToast({ type: "warning", title: "Input Belum Lengkap", text: "Isi nama bank/dana dulu ya!" });
+      return;
     }
-
-    const { error } = await supabase.from('transaksi').insert([
-      { user_id: user.value.id, tipe: modalTipe.value, jumlah, deskripsi },
-    ])
-
-    if (error) throw error
-
-    showModal.value = false
-    showToast({ type: 'success', title: 'Mantap!', text: `Transaksi "${deskripsi}" sebesar ${formatRupiah(jumlah)} berhasil disimpan!` })
-    await muatData()
-  } catch (err) {
-    console.error('Gagal menambah transaksi:', err.message || err)
-    showToast({ type: 'error', title: 'Waduh, Gagal!', text: 'Gagal menyimpan transaksi: ' + (err.message || err) })
-  } finally {
-    isSubmitting.value = false
+    isSubmitting.value = true;
+    error = await tambahPemasukan(nama, deskripsi, jumlah);
+  } else {
+    if (!formDanaId.value) {
+      showToast({ type: "warning", title: "Input Belum Lengkap", text: "Pilih sumber dana dulu ya!" });
+      return;
+    }
+    isSubmitting.value = true;
+    error = await tambahPengeluaran(formDanaId.value, deskripsi, jumlah);
   }
+
+  isSubmitting.value = false;
+
+  if (error) {
+    console.error("Gagal menambah transaksi:", error.message || error);
+    showToast({ type: "error", title: "Waduh, Gagal!", text: error.message || String(error) });
+    return;
+  }
+
+  showModal.value = false;
+  showToast({ type: "success", title: "Mantap!", text: `Transaksi "${deskripsi}" sebesar ${formatRupiah(jumlah)} berhasil disimpan!` });
+  await muatData();
 }
 
-onMounted(muatData)
+onMounted(() => {
+  muatData();
+  fetchDana();
+});
 </script>
 
 <style scoped>
@@ -283,6 +291,16 @@ onMounted(muatData)
   border: none !important;
   outline: none;
   font-size: 0.92rem;
+}
+
+.field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  background: #fff;
+  color: #333;
 }
 
 .text-success {

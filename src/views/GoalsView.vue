@@ -13,9 +13,7 @@
       <div class="list-wrapper">
         <PageLoader v-if="isLoading" text="Memuat data goals..." />
 
-        <div v-else-if="goals.length === 0" class="empty-note">
-          Belum ada target tabungan dibuat.
-        </div>
+        <div v-else-if="goals.length === 0" class="empty-note">Belum ada target tabungan dibuat.</div>
 
         <div v-else class="goal-card" v-for="g in goals" :key="g.id">
           <div class="goal-header">
@@ -35,13 +33,7 @@
             <!-- Tombol Edit Target -->
             <button class="btn btn-info btn-sm text-white" @click="bukaModalEdit(g)">Edit</button>
             <!-- Tombol Hapus (Bisa dihapus kapan saja, dengan konfirmasi) -->
-            <button
-              class="btn btn-danger btn-sm"
-              title="Hapus Target"
-              @click="bukaModalKonfirmasiHapus(g)"
-            >
-              Hapus
-            </button>
+            <button class="btn btn-danger btn-sm" title="Hapus Target" @click="bukaModalKonfirmasiHapus(g)">Hapus</button>
           </div>
         </div>
       </div>
@@ -52,12 +44,12 @@
       <div class="modal-body-confirm">
         <p><strong>Apakah kamu yakin ingin menghapus target ini?</strong></p>
         <p v-if="selectedGoalHapus">
-          Target <strong>{{ selectedGoalHapus.nama_goal }}</strong> dengan dana terkumpul 
-          <span class="text-success font-bold">{{ formatRupiah(selectedGoalHapus.terkumpul) }}</span> 
+          Target <strong>{{ selectedGoalHapus.nama_goal }}</strong> dengan dana terkumpul
+          <span class="text-success font-bold">{{ formatRupiah(selectedGoalHapus.terkumpul) }}</span>
           akan dihapus permanen dari daftar.
         </p>
       </div>
-      <div class="modal-actions" style="margin-top: 20px;">
+      <div class="modal-actions" style="margin-top: 20px">
         <button type="button" class="btn btn-secondary" @click="showModalHapus = false">Batal</button>
         <button type="button" class="btn btn-danger" :disabled="isSubmittingHapus" @click="prosesHapusGoal">
           <BaseSpinner v-if="isSubmittingHapus" />
@@ -75,13 +67,7 @@
         </div>
         <div class="field">
           <label>Target Jumlah (Rp)</label>
-          <input 
-            v-model="formTargetJumlah" 
-            type="text" 
-            required 
-            placeholder="1.000.000" 
-            @input="onInputFormat('formTargetJumlah', $event)" 
-          />
+          <input v-model="formTargetJumlah" type="text" required placeholder="1.000.000" @input="onInputFormat('formTargetJumlah', $event)" />
         </div>
         <div class="field">
           <label>Deadline</label>
@@ -89,7 +75,7 @@
         </div>
         <button type="submit" class="btn btn-success btn-block" :disabled="isSubmittingGoal">
           <BaseSpinner v-if="isSubmittingGoal" />
-          {{ isSubmittingGoal ? 'Menyimpan...' : 'Simpan Target Baru' }}
+          {{ isSubmittingGoal ? "Menyimpan..." : "Simpan Target Baru" }}
         </button>
       </form>
     </AppModal>
@@ -103,13 +89,7 @@
         </div>
         <div class="field">
           <label>Target Jumlah (Rp)</label>
-          <input 
-            v-model="formTargetJumlah" 
-            type="text" 
-            required 
-            placeholder="1.000.000" 
-            @input="onInputFormat('formTargetJumlah', $event)" 
-          />
+          <input v-model="formTargetJumlah" type="text" required placeholder="1.000.000" @input="onInputFormat('formTargetJumlah', $event)" />
         </div>
         <div class="field">
           <label>Deadline</label>
@@ -117,7 +97,7 @@
         </div>
         <button type="submit" class="btn btn-success btn-block" :disabled="isSubmittingGoal">
           <BaseSpinner v-if="isSubmittingGoal" />
-          {{ isSubmittingGoal ? 'Menyimpan...' : 'Simpan Perubahan' }}
+          {{ isSubmittingGoal ? "Menyimpan..." : "Simpan Perubahan" }}
         </button>
       </form>
     </AppModal>
@@ -126,14 +106,15 @@
     <AppModal v-model="showModalIsi" title="Isi Tabungan Target">
       <form @submit.prevent="handleIsiTabungan">
         <div class="field">
+          <label class="text-success">Ambil dari Sumber Dana</label>
+          <select v-model="formDanaIdIsi" required>
+            <option value="" disabled>Pilih sumber dana</option>
+            <option v-for="d in danaList" :key="d.id" :value="d.id">{{ d.nama }} (Rp {{ d.saldo.toLocaleString("id-ID") }})</option>
+          </select>
+        </div>
+        <div class="field">
           <label>Nominal Tabungan (Rp)</label>
-          <input 
-            v-model="formNominalIsi" 
-            type="text" 
-            required 
-            placeholder="Contoh: 100.000" 
-            @input="onInputFormat('formNominalIsi', $event)" 
-          />
+          <input v-model="formNominalIsi" type="text" required placeholder="Contoh: 100.000" @input="onInputFormat('formNominalIsi', $event)" />
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" @click="showModalIsi = false">Batal</button>
@@ -149,14 +130,15 @@
     <AppModal v-model="showModalTarik" title="Tarik Dana Target">
       <form @submit.prevent="handleTarikTabungan">
         <div class="field">
+          <label class="text-warning">Kembalikan ke Sumber Dana</label>
+          <select v-model="formDanaIdTarik" required>
+            <option value="" disabled>Pilih sumber dana</option>
+            <option v-for="d in danaList" :key="d.id" :value="d.id">{{ d.nama }} (Rp {{ d.saldo.toLocaleString("id-ID") }})</option>
+          </select>
+        </div>
+        <div class="field">
           <label>Nominal Penarikan (Rp)</label>
-          <input 
-            v-model="formNominalTarik" 
-            type="text" 
-            required 
-            placeholder="Contoh: 50.000" 
-            @input="onInputFormat('formNominalTarik', $event)" 
-          />
+          <input v-model="formNominalTarik" type="text" required placeholder="Contoh: 50.000" @input="onInputFormat('formNominalTarik', $event)" />
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" @click="showModalTarik = false">Batal</button>
@@ -171,109 +153,109 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../composables/useAuth'
-import { useToast } from '../composables/useToast'
-import { formatRupiah } from '../utils/format'
-import AppLayout from '../components/AppLayout.vue'
-import AppModal from '../components/AppModal.vue'
-import PageLoader from '../components/PageLoader.vue'
-import BaseSpinner from '../components/BaseSpinner.vue'
+import { ref, onMounted } from "vue";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../composables/useAuth";
+import { useToast } from "../composables/useToast";
+import { useSumberDana } from "../composables/useSumberDana";
+import { formatRupiah } from "../utils/format";
+import AppLayout from "../components/AppLayout.vue";
+import AppModal from "../components/AppModal.vue";
+import PageLoader from "../components/PageLoader.vue";
+import BaseSpinner from "../components/BaseSpinner.vue";
 
-const { user } = useAuth()
-const { showToast } = useToast()
+const { user } = useAuth();
+const { showToast } = useToast();
+const { danaList, fetchDana } = useSumberDana();
 
-const isLoading = ref(true)
-const goals = ref([])
-const isWarningActive = ref(false)
+const isLoading = ref(true);
+const goals = ref([]);
+const isWarningActive = ref(false);
 
 // --- State Tambah Target ---
-const showModalTambah = ref(false)
-const formNamaGoal = ref('')
-const formTargetJumlah = ref('')
-const formDeadline = ref('')
-const isSubmittingGoal = ref(false)
+const showModalTambah = ref(false);
+const formNamaGoal = ref("");
+const formTargetJumlah = ref("");
+const formDeadline = ref("");
+const isSubmittingGoal = ref(false);
 
 // --- State Edit Target ---
-const showModalEdit = ref(false)
-const editGoalId = ref(null)
+const showModalEdit = ref(false);
+const editGoalId = ref(null);
 
-// --- State Isi Tabungan ---
-const showModalIsi = ref(false)
-const isiGoalId = ref(null)
-const formNominalIsi = ref('')
-const isSubmittingIsi = ref(false)
+// --- State Isi Tabungan (v2.3: wajib pilih sumber dana) ---
+const showModalIsi = ref(false);
+const isiGoalId = ref(null);
+const formDanaIdIsi = ref("");
+const formNominalIsi = ref("");
+const isSubmittingIsi = ref(false);
 
-// --- State Tarik Dana ---
-const showModalTarik = ref(false)
-const tarikGoalId = ref(null)
-const formNominalTarik = ref('')
-const isSubmittingTarik = ref(false)
+// --- State Tarik Dana (v2.3: wajib pilih sumber dana tujuan) ---
+const showModalTarik = ref(false);
+const tarikGoalId = ref(null);
+const formDanaIdTarik = ref("");
+const formNominalTarik = ref("");
+const isSubmittingTarik = ref(false);
 
 // --- State Hapus Target ---
-const showModalHapus = ref(false)
-const selectedGoalHapus = ref(null)
-const isSubmittingHapus = ref(false)
+const showModalHapus = ref(false);
+const selectedGoalHapus = ref(null);
+const isSubmittingHapus = ref(false);
 
 function formatRibuan(val) {
-  if (!val) return ''
-  const angka = val.toString().replace(/\D/g, '')
-  return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  if (!val) return "";
+  const angka = val.toString().replace(/\D/g, "");
+  return angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 function parseAngka(val) {
-  if (!val) return 0
-  return parseInt(val.toString().replace(/\D/g, ''), 10) || 0
+  if (!val) return 0;
+  return parseInt(val.toString().replace(/\D/g, ""), 10) || 0;
 }
 
 function onInputFormat(field, event) {
-  const formatted = formatRibuan(event.target.value)
-  if (field === 'formTargetJumlah') formTargetJumlah.value = formatted
-  if (field === 'formNominalIsi') formNominalIsi.value = formatted
-  if (field === 'formNominalTarik') formNominalTarik.value = formatted
+  const formatted = formatRibuan(event.target.value);
+  if (field === "formTargetJumlah") formTargetJumlah.value = formatted;
+  if (field === "formNominalIsi") formNominalIsi.value = formatted;
+  if (field === "formNominalTarik") formNominalTarik.value = formatted;
 }
 
 function persenGoal(g) {
-  const terkumpul = Math.max(g.terkumpul || 0, 0)
-  const target = g.target_jumlah || g.target_nominal || 1
-  return Math.min(Math.round((terkumpul / target) * 100), 100)
+  const terkumpul = Math.max(g.terkumpul || 0, 0);
+  const target = g.target_jumlah || g.target_nominal || 1;
+  return Math.min(Math.round((terkumpul / target) * 100), 100);
 }
 
 async function muatGoals() {
-  if (!user.value) return
-  isLoading.value = true
-  const { data, error } = await supabase
-    .from('goals')
-    .select('*')
-    .eq('user_id', user.value.id)
-    .order('created_at', { ascending: false })
+  if (!user.value) return;
+  isLoading.value = true;
+  const { data, error } = await supabase.from("goals").select("*").eq("user_id", user.value.id).order("created_at", { ascending: false });
 
   if (error) {
-    showToast({ type: 'error', title: 'Gagal memuat data', text: error.message })
-    isLoading.value = false
-    return
+    showToast({ type: "error", title: "Gagal memuat data", text: error.message });
+    isLoading.value = false;
+    return;
   }
 
-  goals.value = data || []
-  isLoading.value = false
+  goals.value = data || [];
+  isLoading.value = false;
 }
 
 function bukaModalTambah() {
-  formNamaGoal.value = ''
-  formTargetJumlah.value = ''
-  formDeadline.value = ''
-  showModalTambah.value = true
+  formNamaGoal.value = "";
+  formTargetJumlah.value = "";
+  formDeadline.value = "";
+  showModalTambah.value = true;
 }
 
 async function handleTambahGoal() {
-  const targetVal = parseAngka(formTargetJumlah.value)
+  const targetVal = parseAngka(formTargetJumlah.value);
   if (targetVal <= 0) {
-    showToast({ type: 'warning', title: 'Nominal tidak valid', text: 'Target nominal harus lebih dari 0' })
-    return
+    showToast({ type: "warning", title: "Nominal tidak valid", text: "Target nominal harus lebih dari 0" });
+    return;
   }
 
-  isSubmittingGoal.value = true
+  isSubmittingGoal.value = true;
 
   let payload = {
     user_id: user.value.id,
@@ -281,209 +263,217 @@ async function handleTambahGoal() {
     target_jumlah: targetVal,
     terkumpul: 0,
     deadline: formDeadline.value,
+  };
+
+  let { error } = await supabase.from("goals").insert([payload]);
+
+  if (error && error.message && error.message.includes("target_jumlah")) {
+    delete payload.target_jumlah;
+    payload.target_nominal = targetVal;
+    const retry = await supabase.from("goals").insert([payload]);
+    error = retry.error;
   }
 
-  let { error } = await supabase.from('goals').insert([payload])
-
-  if (error && error.message && error.message.includes('target_jumlah')) {
-    delete payload.target_jumlah
-    payload.target_nominal = targetVal
-    const retry = await supabase.from('goals').insert([payload])
-    error = retry.error
-  }
-
-  isSubmittingGoal.value = false
+  isSubmittingGoal.value = false;
 
   if (error) {
-    showToast({ type: 'error', title: 'Gagal membuat target', text: error.message })
-    return
+    showToast({ type: "error", title: "Gagal membuat target", text: error.message });
+    return;
   }
 
-  showModalTambah.value = false
-  showToast({ type: 'success', title: 'Berhasil', text: 'Target berhasil dibuat!' })
-  await muatGoals()
+  showModalTambah.value = false;
+  showToast({ type: "success", title: "Berhasil", text: "Target berhasil dibuat!" });
+  await muatGoals();
 }
 
 // --- Fungsi Edit Target ---
 function bukaModalEdit(goal) {
-  editGoalId.value = goal.id
-  formNamaGoal.value = goal.nama_goal
-  formTargetJumlah.value = formatRibuan(goal.target_jumlah || goal.target_nominal || 0)
-  formDeadline.value = goal.deadline || ''
-  showModalEdit.value = true
+  editGoalId.value = goal.id;
+  formNamaGoal.value = goal.nama_goal;
+  formTargetJumlah.value = formatRibuan(goal.target_jumlah || goal.target_nominal || 0);
+  formDeadline.value = goal.deadline || "";
+  showModalEdit.value = true;
 }
 
 async function handleEditGoal() {
-  const targetVal = parseAngka(formTargetJumlah.value)
+  const targetVal = parseAngka(formTargetJumlah.value);
   if (targetVal <= 0) {
-    showToast({ type: 'warning', title: 'Nominal tidak valid', text: 'Target nominal harus lebih dari 0' })
-    return
+    showToast({ type: "warning", title: "Nominal tidak valid", text: "Target nominal harus lebih dari 0" });
+    return;
   }
 
-  isSubmittingGoal.value = true
+  isSubmittingGoal.value = true;
 
   let payload = {
     nama_goal: formNamaGoal.value,
     target_jumlah: targetVal,
     deadline: formDeadline.value,
+  };
+
+  let { error } = await supabase.from("goals").update(payload).eq("id", editGoalId.value);
+
+  if (error && error.message && error.message.includes("target_jumlah")) {
+    delete payload.target_jumlah;
+    payload.target_nominal = targetVal;
+    const retry = await supabase.from("goals").update(payload).eq("id", editGoalId.value);
+    error = retry.error;
   }
 
-  let { error } = await supabase
-    .from('goals')
-    .update(payload)
-    .eq('id', editGoalId.value)
-
-  if (error && error.message && error.message.includes('target_jumlah')) {
-    delete payload.target_jumlah
-    payload.target_nominal = targetVal
-    const retry = await supabase
-      .from('goals')
-      .update(payload)
-      .eq('id', editGoalId.value)
-    error = retry.error
-  }
-
-  isSubmittingGoal.value = false
+  isSubmittingGoal.value = false;
 
   if (error) {
-    showToast({ type: 'error', title: 'Gagal memperbarui target', text: error.message })
-    return
+    showToast({ type: "error", title: "Gagal memperbarui target", text: error.message });
+    return;
   }
 
-  showModalEdit.value = false
-  showToast({ type: 'success', title: 'Berhasil', text: 'Target berhasil diperbarui!' })
-  await muatGoals()
+  showModalEdit.value = false;
+  showToast({ type: "success", title: "Berhasil", text: "Target berhasil diperbarui!" });
+  await muatGoals();
 }
 
 function bukaModalIsi(id) {
-  isiGoalId.value = id
-  formNominalIsi.value = ''
-  showModalIsi.value = true
+  isiGoalId.value = id;
+  formDanaIdIsi.value = "";
+  formNominalIsi.value = "";
+  showModalIsi.value = true;
 }
 
+/** v2.3: sekarang kirim p_dana_id juga, saldo sumber dana itu yang dipotong. */
 async function handleIsiTabungan() {
-  const nominal = parseAngka(formNominalIsi.value)
+  const nominal = parseAngka(formNominalIsi.value);
+  if (!formDanaIdIsi.value) {
+    showToast({ type: "warning", title: "Input Belum Lengkap", text: "Pilih sumber dana dulu ya!" });
+    return;
+  }
   if (nominal <= 0) {
-    showToast({ type: 'warning', title: 'Nominal tidak valid', text: 'Nominal tabungan harus lebih dari 0' })
-    return
+    showToast({ type: "warning", title: "Nominal tidak valid", text: "Nominal tabungan harus lebih dari 0" });
+    return;
   }
 
-  isSubmittingIsi.value = true
+  isSubmittingIsi.value = true;
 
-  const { data, error } = await supabase.rpc('proses_tabungan', {
+  const { data, error } = await supabase.rpc("proses_tabungan", {
     p_user_id: user.value.id,
     p_goal_id: isiGoalId.value,
     p_nominal: Number(nominal),
-  })
+    p_dana_id: formDanaIdIsi.value,
+  });
 
-  isSubmittingIsi.value = false
+  isSubmittingIsi.value = false;
 
   if (error) {
-    showToast({ type: 'error', title: 'Gagal menabung', text: error.message })
-    return
+    showToast({ type: "error", title: "Gagal menabung", text: error.message });
+    return;
   }
   if (data && data.success === false) {
-    showToast({ type: 'warning', title: 'Gagal', text: data.message })
-    return
+    showToast({ type: "warning", title: "Gagal", text: data.message });
+    return;
   }
 
-  showModalIsi.value = false
-  showToast({ type: 'success', title: 'Berhasil!', text: `${formatRupiah(nominal)} telah ditabung.` })
-  await muatGoals()
+  showModalIsi.value = false;
+  showToast({ type: "success", title: "Berhasil!", text: `${formatRupiah(nominal)} telah ditabung.` });
+  await Promise.all([muatGoals(), fetchDana()]);
 }
 
 function bukaModalTarik(id) {
-  tarikGoalId.value = id
-  formNominalTarik.value = ''
-  showModalTarik.value = true
+  tarikGoalId.value = id;
+  formDanaIdTarik.value = "";
+  formNominalTarik.value = "";
+  showModalTarik.value = true;
 }
 
+/** v2.3: sekarang kirim p_dana_id juga, saldo sumber dana itu yang ditambah lagi. */
 async function handleTarikTabungan() {
-  const nominal = parseAngka(formNominalTarik.value)
+  const nominal = parseAngka(formNominalTarik.value);
+  if (!formDanaIdTarik.value) {
+    showToast({ type: "warning", title: "Input Belum Lengkap", text: "Pilih sumber dana tujuan dulu ya!" });
+    return;
+  }
   if (nominal <= 0) {
-    showToast({ type: 'warning', title: 'Nominal tidak valid', text: 'Nominal penarikan harus lebih dari 0' })
-    return
+    showToast({ type: "warning", title: "Nominal tidak valid", text: "Nominal penarikan harus lebih dari 0" });
+    return;
   }
 
-  isSubmittingTarik.value = true
+  isSubmittingTarik.value = true;
 
-  const { data, error } = await supabase.rpc('tarik_tabungan', {
+  const { data, error } = await supabase.rpc("tarik_tabungan", {
     p_user_id: user.value.id,
     p_goal_id: tarikGoalId.value,
     p_nominal: Number(nominal),
-  })
+    p_dana_id: formDanaIdTarik.value,
+  });
 
-  isSubmittingTarik.value = false
+  isSubmittingTarik.value = false;
 
   if (error) {
-    showToast({ type: 'error', title: 'Gagal menarik dana', text: error.message })
-    return
+    showToast({ type: "error", title: "Gagal menarik dana", text: error.message });
+    return;
   }
   if (data && data.success === false) {
-    showToast({ type: 'warning', title: 'Gagal', text: data.message })
-    return
+    showToast({ type: "warning", title: "Gagal", text: data.message });
+    return;
   }
 
-  showModalTarik.value = false
-  showToast({ type: 'success', title: 'Berhasil!', text: `${formatRupiah(nominal)} telah ditarik dari target.` })
-  await muatGoals()
+  showModalTarik.value = false;
+  showToast({ type: "success", title: "Berhasil!", text: `${formatRupiah(nominal)} telah ditarik dari target.` });
+  await Promise.all([muatGoals(), fetchDana()]);
 }
 
 function bukaModalKonfirmasiHapus(goal) {
   // Cek apakah ada saldo/dana terkumpul di dalam target tersebut
-  const terkumpul = goal.terkumpul || 0
+  const terkumpul = goal.terkumpul || 0;
   if (terkumpul > 0) {
     // Cegah spam notifikasi jika sedang aktif
-    if (isWarningActive.value) return
+    if (isWarningActive.value) return;
 
-    isWarningActive.value = true
-    showToast({ 
-      type: 'warning', 
-      title: 'Tidak bisa dihapus', 
-      text: 'Tidak bisa dihapus karena ada uang di tabungan tersebut' 
-    })
+    isWarningActive.value = true;
+    showToast({
+      type: "warning",
+      title: "Tidak bisa dihapus",
+      text: "Tidak bisa dihapus karena ada uang di tabungan tersebut",
+    });
 
     // Reset status aktif toast setelah 2 detik agar bisa diperingatkan lagi jika diklik di waktu berbeda
     setTimeout(() => {
-      isWarningActive.value = false
-    }, 5000)
+      isWarningActive.value = false;
+    }, 5000);
 
-    return
+    return;
   }
 
-  selectedGoalHapus.value = goal
-  showModalHapus.value = true
+  selectedGoalHapus.value = goal;
+  showModalHapus.value = true;
 }
 
 async function prosesHapusGoal() {
-  if (!selectedGoalHapus.value) return
+  if (!selectedGoalHapus.value) return;
 
-  isSubmittingHapus.value = true
+  isSubmittingHapus.value = true;
 
-  const { error } = await supabase
-    .from('goals')
-    .delete()
-    .eq('id', selectedGoalHapus.value.id)
+  const { error } = await supabase.from("goals").delete().eq("id", selectedGoalHapus.value.id);
 
-  isSubmittingHapus.value = false
+  isSubmittingHapus.value = false;
 
   if (error) {
-    showToast({ type: 'error', title: 'Gagal menghapus target', text: error.message })
-    return
+    showToast({ type: "error", title: "Gagal menghapus target", text: error.message });
+    return;
   }
 
-  showToast({ 
-    type: 'success', 
-    title: 'Berhasil', 
-    text: `Target ${selectedGoalHapus.value.nama_goal} berhasil dihapus dari daftar.` 
-  })
+  showToast({
+    type: "success",
+    title: "Berhasil",
+    text: `Target ${selectedGoalHapus.value.nama_goal} berhasil dihapus dari daftar.`,
+  });
 
-  showModalHapus.value = false
-  selectedGoalHapus.value = null
-  await muatGoals()
+  showModalHapus.value = false;
+  selectedGoalHapus.value = null;
+  await muatGoals();
 }
 
-onMounted(muatGoals)
+onMounted(() => {
+  muatGoals();
+  fetchDana();
+});
 </script>
 
 <style scoped>
@@ -588,6 +578,10 @@ onMounted(muatGoals)
   color: #2e7d32;
 }
 
+.text-warning {
+  color: #b7791f;
+}
+
 .font-bold {
   font-weight: bold;
 }
@@ -623,6 +617,16 @@ onMounted(muatGoals)
   color: #444;
   font-size: 0.95rem;
   line-height: 1.4;
+}
+
+.field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  background: #fff;
+  color: #333;
 }
 
 @media (max-width: 768px) {

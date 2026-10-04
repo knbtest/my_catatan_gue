@@ -3,22 +3,21 @@
   <div class="about-page-wrapper">
     <!-- Tombol Kembali Dinamis -->
     <div class="top-nav">
-      <button @click="goBack" class="back-btn">
-        &larr; Kembali
-      </button>
+      <button @click="goBack" class="back-btn">&larr; Kembali</button>
     </div>
 
     <div class="about-container">
       <!-- Header Section -->
       <div class="about-card hero-card">
         <div class="hero-icon">💰</div>
-        <h1>{{ config.appName }}</h1>
+        <h1>My Catatan Gua</h1>
+        <!-- <h1>{{ config.appName }}</h1> -->
         <p class="badge-version">Versi {{ config.version }}</p>
         <p class="description">
-          Aplikasi pencatatan keuangan pribadi yang dirancang untuk membantu mengelola transaksi, 
-          anggaran bulanan, target tabungan, dan pengingat finansial otomatis harian secara efisien.
+          <strong>My Catatan Gua</strong> — Platform pencatatan finansial digital untuk membantu siapa saja dalam mengelola pemasukan, pengeluaran, dan target tabungan dengan lebih mudah serta teratur. Catatan: Aplikasi ini murni wadah
+          pencatatan keuangan pribadi, bukan dompet digital, bank, atau layanan transaksi uang asli.
         </p>
-        
+
         <div class="meta-info">
           <div class="meta-item">
             <span>📅 Awal Pembuatan:</span>
@@ -30,9 +29,7 @@
           </div>
           <div class="meta-item">
             <span>👨‍💻 Pengembang:</span>
-            <a href="https://zackynurfazz.netlify.app" target="_blank" rel="noopener noreferrer" class="dev-link">
-              {{ config.developer }} ↗
-            </a>
+            <a href="https://zackynurfazz.netlify.app" target="_blank" rel="noopener noreferrer" class="dev-link"> {{ config.developer }} ↗ </a>
           </div>
         </div>
       </div>
@@ -46,18 +43,13 @@
         <p class="section-subtitle">Daftar pembaruan fitur dari setiap versi aplikasi.</p>
 
         <div class="changelog-list">
-          <div 
-            v-for="(item, index) in config.changelog" 
-            :key="index"
-            class="changelog-item"
-            :class="{ active: activeChangelog === index }"
-          >
+          <div v-for="(item, index) in config.changelog" :key="index" class="changelog-item">
             <div class="changelog-header" @click="toggleChangelog(index)">
               <div class="version-badge-group">
                 <span class="v-tag">{{ item.version }}</span>
                 <span class="v-date">{{ item.date }}</span>
               </div>
-              <span class="toggle-icon">{{ activeChangelog === index ? '▲' : '▼' }}</span>
+              <span class="toggle-icon">{{ activeChangelog === index ? "▲" : "▼" }}</span>
             </div>
 
             <div v-show="activeChangelog === index" class="changelog-body">
@@ -74,31 +66,34 @@
 
       <!-- Footer Copyright -->
       <div class="about-footer">
-        <p>&copy; {{ config.year }} {{ config.appName }} &bull; Dikembangkan oleh <strong>
-            <a href="https://zackynurfazz.netlify.app"style="text-decoration: none;" target="_blank" rel="noopener noreferrer">{{ config.developer }}</a>
-        </strong>.</p>
+        <p>
+          &copy; {{ config.year }} {{ config.appName }} &bull; Dikembangkan oleh
+          <strong>
+            <a href="https://zackynurfazz.netlify.app" style="text-decoration: none" target="_blank" rel="noopener noreferrer">{{ config.developer }}</a> </strong
+          >.
+        </p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { APP_CONFIG as config } from '../config'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { APP_CONFIG as config } from "../config";
 
 // Default membuka accordion index ke-0 (Versi terbaru)
-const router = useRouter()
-const activeChangelog = ref(0)
+const router = useRouter();
+const activeChangelog = ref(0);
 
 function toggleChangelog(index) {
-  activeChangelog.value = activeChangelog.value === index ? null : index
+  activeChangelog.value = activeChangelog.value === index ? null : index;
 }
 function goBack() {
   if (window.history.length > 1) {
-    router.go(-1)
+    router.go(-1);
   } else {
-    router.push('/')
+    router.push("/");
   }
 }
 </script>
@@ -107,7 +102,7 @@ function goBack() {
 .about-page-wrapper {
   min-height: 100vh;
   padding: 30px 20px 40px;
-  background-color: inherit; /* Menyesuaikan background aplikasi */
+  background-color: inherit;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -155,7 +150,6 @@ function goBack() {
   gap: 20px;
 }
 
-/* Card Styling dengan sentuhan modern bersih & tipis neubrutalism */
 .about-card {
   background: #ffffff;
   border: 2px solid #1e1b4b;
@@ -196,9 +190,9 @@ function goBack() {
 .description {
   color: #4b5563;
   font-size: 0.95rem;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto 20px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .meta-info {
@@ -234,7 +228,6 @@ function goBack() {
   box-shadow: 2px 2px 0px #1e1b4b;
 }
 
-/* Changelog Styles */
 .changelog-top-title {
   display: flex;
   justify-content: space-between;
@@ -358,7 +351,6 @@ function goBack() {
   padding: 10px 0;
 }
 
-/* Responsif Mobile */
 @media (max-width: 640px) {
   .meta-info {
     flex-direction: column;

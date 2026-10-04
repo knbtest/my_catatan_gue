@@ -9,15 +9,15 @@
       </div>
       <button @click="requestPermission" class="btn-notif">Aktifkan di HP</button>
     </div>
-
+ 
     <div class="page-header">
       <div class="page-title">Beranda</div>
       <div class="user-chip">{{ isLoading ? "Memuat nama..." : namaUser }}</div>
     </div>
-
+ 
     <!-- ===== Kartu ringkasan ===== -->
     <div class="stat-cards">
-      <template v-if="isLoading">
+      <template v-if="isLoading || isLoadingDana">
         <div class="stat-card skeleton-card" v-for="i in 3" :key="i">
           <SkeletonBlock width="90px" height="14px" />
           <SkeletonBlock width="130px" height="22px" />
@@ -38,12 +38,15 @@
         </div>
       </template>
     </div>
-
+ 
+    <!-- ===== Card per sumber dana/debit ===== -->
+    <DanaCards />
+ 
     <div class="bottom-row">
       <!-- ===== Transaksi terbaru (Auto Scroll) ===== -->
       <div class="transaksi-box">
         <h3>Transaksi Terbaru Bulan Ini</h3>
-
+ 
         <div v-if="isLoading" class="skeleton-list">
           <SkeletonBlock v-for="i in 4" :key="i" height="18px" />
         </div>
@@ -55,7 +58,7 @@
           </div>
         </div>
       </div>
-
+ 
       <div class="right-col">
         <!-- ===== Ringkasan bulan ini ===== -->
         <div class="bulan-box">
@@ -78,14 +81,14 @@
             </div>
           </template>
         </div>
-
+ 
         <!-- ===== Budget bulan ini ===== -->
         <div class="budget-box">
           <div class="budget-head">
             <h3>Budget Bulan Ini</h3>
             <button class="btn btn-outline btn-sm" @click="openBudgetModal">Atur</button>
           </div>
-
+ 
           <div v-if="isLoadingBudget" class="skeleton-list">
             <SkeletonBlock height="10px" />
             <SkeletonBlock width="60%" height="12px" />
@@ -105,7 +108,7 @@
             </div>
           </div>
         </div>
-
+ 
         <!-- ===== Target goals ===== -->
         <RouterLink to="/goals" class="goals-box">
           <h3>Target Goals</h3>
@@ -120,7 +123,7 @@
         </RouterLink>
       </div>
     </div>
-
+ 
     <!-- ===== Modal atur budget ===== -->
     <AppModal v-model="showBudgetModal" title="Atur Budget Bulan Ini">
       <form @submit.prevent="handleSimpanBudget">
@@ -139,34 +142,38 @@
     </AppModal>
   </AppLayout>
 </template>
-
+ 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../composables/useAuth";
 import { useToast } from "../composables/useToast";
 import { useNotification } from "../composables/useNotification";
+import { useSumberDana } from "../composables/useSumberDana";
 import { formatRupiah, getRentangBulanIni } from "../utils/format";
 import AppLayout from "../components/AppLayout.vue";
 import AppModal from "../components/AppModal.vue";
 import BaseSpinner from "../components/BaseSpinner.vue";
 import SkeletonBlock from "../components/SkeletonBlock.vue";
-
+import DanaCards from "../components/DanaCards.vue";
+ 
 const { user } = useAuth();
 const { showToast } = useToast();
 const { permission, requestPermission, initNotificationScheduler } = useNotification();
-
+ 
+// ----- Total Saldo sekarang bersumber dari kumpulan sumber_dana (v2.3) -----
+const { totalSaldo, isLoading: isLoadingDana, fetchDana } = useSumberDana();
+ 
 // ----- state utama dashboard -----
 const isLoading = ref(true);
 const namaUser = ref("");
-const totalSaldo = ref(0);
 const bulanMasuk = ref(0);
 const bulanKeluar = ref(0);
 const bulanSaldo = ref(0);
 const periodeBulanIni = ref("");
 const transaksiTampil = ref([]);
 const goalsList = ref([]);
-
+ 
 // ----- state budget -----
 const isLoadingBudget = ref(true);
 const isSavingBudget = ref(false);
@@ -174,46 +181,37 @@ const budgetLimit = ref(null);
 const totalPengeluaranBulanIni = ref(0);
 const showBudgetModal = ref(false);
 const inputBudget = ref("");
-
+ 
 const persentaseBudget = computed(() => {
   if (!budgetLimit.value || budgetLimit.value <= 0) return 0;
   return (totalPengeluaranBulanIni.value / budgetLimit.value) * 100;
 });
-
+ 
 const warnaBudget = computed(() => {
   if (persentaseBudget.value >= 100) return "bg-danger";
   if (persentaseBudget.value >= 80) return "bg-warning";
   return "bg-success";
 });
-
-/** Sama seperti hitungDataDashboard() di dashboard.js lama */
+ 
+/** Sama seperti hitungDataDashboard() di dashboard.js lama.
+ *  Bedanya: Total Saldo all-time TIDAK dihitung di sini lagi (lihat
+ *  useSumberDana di atas) — fungsi ini sekarang cuma urus arus kas
+ *  bulan berjalan, transaksi terbaru, dan goals. */
 async function muatDashboard() {
   isLoading.value = true;
   const uid = user.value.id;
   if (user.value.email) namaUser.value = user.value.email.split("@")[0];
-
+ 
   const { awal, akhir, sekarang } = getRentangBulanIni();
-
-  const [semuaRes, bulanRes, goalsRes] = await Promise.all([
-    supabase.from("transaksi").select("tipe, jumlah, deskripsi").eq("user_id", uid),
+ 
+  const [bulanRes, goalsRes] = await Promise.all([
     supabase.from("transaksi").select("*").eq("user_id", uid).gte("created_at", awal).lt("created_at", akhir).order("created_at", { ascending: false }),
     supabase.from("goals").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(3),
   ]);
-
-  if (semuaRes.error) console.error("Gagal ambil semua transaksi:", semuaRes.error.message);
+ 
   if (bulanRes.error) console.error("Gagal ambil transaksi bulan ini:", bulanRes.error.message);
   if (goalsRes.error) console.error("Gagal ambil goals:", goalsRes.error.message);
-
-  // --- Saldo utama (all-time) ---
-  let totalMasukSelamanya = 0;
-  let totalKeluarSelamanya = 0;
-  (semuaRes.data || []).forEach((i) => {
-    const jumlah = parseInt(i.jumlah) || 0;
-    if (i.tipe === "pemasukan") totalMasukSelamanya += jumlah;
-    else totalKeluarSelamanya += jumlah;
-  });
-  totalSaldo.value = Math.max(totalMasukSelamanya - totalKeluarSelamanya, 0);
-
+ 
   // --- Arus kas riil bulan ini (exclude transaksi internal goals) ---
   let masuk = 0;
   let keluar = 0;
@@ -222,24 +220,24 @@ async function muatDashboard() {
     const jumlah = parseInt(i.jumlah) || 0;
     const deskripsiLc = (i.deskripsi || "").toLowerCase();
     const isTransaksiGoals = deskripsiLc.includes("goals") || deskripsiLc.includes("tabungan") || deskripsiLc.includes("tarik dana");
-
+ 
     if (!isTransaksiGoals) {
       if (i.tipe === "pemasukan") masuk += jumlah;
       else keluar += jumlah;
       tampil.push(i); // Memasukkan semua data tanpa batasan angka
     }
   });
-
+ 
   bulanMasuk.value = masuk;
   bulanKeluar.value = keluar;
   bulanSaldo.value = Math.max(masuk - keluar, 0);
   periodeBulanIni.value = sekarang.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   transaksiTampil.value = tampil;
   goalsList.value = goalsRes.data || [];
-
+ 
   isLoading.value = false;
 }
-
+ 
 /** Sama seperti ambilBudgetBulanIni() + hitungPengeluaranBulanIni() di budget.js */
 async function muatBudget() {
   isLoadingBudget.value = true;
@@ -248,25 +246,25 @@ async function muatBudget() {
   const bulan = now.getMonth() + 1;
   const tahun = now.getFullYear();
   const { awal, akhir } = getRentangBulanIni();
-
+ 
   const [budgetRes, pengeluaranRes] = await Promise.all([
     supabase.from("budgets").select("budget_limit").eq("user_id", uid).eq("bulan", bulan).eq("tahun", tahun).maybeSingle(),
     supabase.from("transaksi").select("jumlah").eq("user_id", uid).eq("tipe", "pengeluaran").gte("created_at", awal).lt("created_at", akhir),
   ]);
-
+ 
   if (budgetRes.error) console.error("[budget] gagal ambil budget:", budgetRes.error.message);
   if (pengeluaranRes.error) console.error("[budget] gagal ambil transaksi:", pengeluaranRes.error.message);
-
+ 
   budgetLimit.value = budgetRes.data?.budget_limit ?? null;
   totalPengeluaranBulanIni.value = (pengeluaranRes.data || []).reduce((total, t) => total + (parseInt(t.jumlah) || 0), 0);
   isLoadingBudget.value = false;
 }
-
+ 
 function openBudgetModal() {
   inputBudget.value = budgetLimit.value ? formatRibuan(budgetLimit.value) : "";
   showBudgetModal.value = true;
 }
-
+ 
 /** Sama seperti simpanBudget() di budget.js (upsert) */
 async function handleSimpanBudget() {
   const nominal = parseAngka(inputBudget.value);
@@ -274,11 +272,11 @@ async function handleSimpanBudget() {
     showToast({ type: "warning", title: "Nominal tidak valid", text: "Masukkan nominal budget yang valid." });
     return;
   }
-
+ 
   isSavingBudget.value = true;
   const uid = user.value.id;
   const now = new Date();
-
+ 
   const { error } = await supabase.from("budgets").upsert(
     {
       user_id: uid,
@@ -289,43 +287,42 @@ async function handleSimpanBudget() {
     },
     { onConflict: "user_id,bulan,tahun" },
   );
-
+ 
   isSavingBudget.value = false;
-
+ 
   if (error) {
     showToast({ type: "error", title: "Gagal menyimpan budget", text: error.message });
     return;
   }
-
+ 
   showBudgetModal.value = false;
   showToast({ type: "success", title: "Tersimpan", text: "Budget bulan ini berhasil diperbarui." });
   await muatBudget();
 }
-
+ 
 function formatRibuan(val) {
   if (!val) return "";
   const angka = val.toString().replace(/\D/g, "");
   return angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
-
+ 
 function parseAngka(val) {
   if (!val) return 0;
   return parseInt(val.toString().replace(/\D/g, ""), 10) || 0;
 }
-
+ 
 function onInputBudgetFormat(event) {
   inputBudget.value = formatRibuan(event.target.value);
 }
-
+ 
 onMounted(async () => {
-  await muatDashboard();
-  await muatBudget();
-  
+  await Promise.all([muatDashboard(), muatBudget(), fetchDana()]);
+ 
   // Mengaktifkan penjadwalan pengecekan notifikasi 4x sehari
   initNotificationScheduler();
 });
 </script>
-
+ 
 <style scoped>
 /* Style Banner Notifikasi HP */
 .notif-banner {
@@ -340,24 +337,24 @@ onMounted(async () => {
   gap: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-
+ 
 .notif-content {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
+ 
 .notif-icon {
   font-size: 20px;
 }
-
+ 
 .notif-text {
   font-size: 0.88rem;
   color: #1e1b4b;
   font-weight: 500;
   margin: 0;
 }
-
+ 
 .btn-notif {
   background-color: #4f46e5;
   color: #ffffff;
@@ -370,11 +367,11 @@ onMounted(async () => {
   white-space: nowrap;
   transition: background-color 0.2s ease;
 }
-
+ 
 .btn-notif:hover {
   background-color: #4338ca;
 }
-
+ 
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -383,7 +380,7 @@ onMounted(async () => {
   gap: 8px;
   margin-bottom: 16px;
 }
-
+ 
 .page-title {
   background: rgba(255, 255, 255, 0.6);
   font-size: 20px;
@@ -392,19 +389,19 @@ onMounted(async () => {
   padding: 8px 14px;
   border-radius: 8px;
 }
-
+ 
 .user-chip {
   color: #444;
   font-size: 0.9rem;
 }
-
+ 
 .stat-cards {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
-
+ 
 .stat-card {
   flex: 1;
   min-width: 200px;
@@ -417,24 +414,24 @@ onMounted(async () => {
   justify-content: center;
   box-shadow: var(--shadow-card);
 }
-
+ 
 .stat-card.skeleton-card {
   background: #fff;
   gap: 10px;
 }
-
+ 
 .stat-card h2 {
   font-size: 16px;
   margin-bottom: 8px;
   opacity: 0.9;
   font-weight: 600;
 }
-
+ 
 .stat-card .nominal {
   font-size: 22px;
   font-weight: bold;
 }
-
+ 
 .card-saldo {
   background: rgba(61, 169, 252, 0.85);
 }
@@ -444,14 +441,14 @@ onMounted(async () => {
 .card-keluar {
   background: rgba(220, 80, 80, 0.85);
 }
-
+ 
 .bottom-row {
   display: flex;
   gap: 16px;
   align-items: stretch;
   flex-wrap: wrap;
 }
-
+ 
 .transaksi-box {
   flex: 1.4;
   min-width: 260px;
@@ -460,13 +457,13 @@ onMounted(async () => {
   padding: 18px;
   box-shadow: var(--shadow-soft);
 }
-
+ 
 .transaksi-box h3 {
   font-size: 18px;
   margin-bottom: 12px;
   color: var(--color-primary-dark);
 }
-
+ 
 /* Penyesuaian Scrollbar & Auto Scroll Transaksi */
 .transaksi-list {
   display: flex;
@@ -476,20 +473,20 @@ onMounted(async () => {
   overflow-y: auto;
   padding-right: 6px;
 }
-
+ 
 .transaksi-list::-webkit-scrollbar {
   width: 6px;
 }
-
+ 
 .transaksi-list::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
-
+ 
 .transaksi-list::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
-
+ 
 .transaksi-item {
   display: flex;
   justify-content: space-between;
@@ -512,7 +509,7 @@ onMounted(async () => {
   color: var(--color-danger);
   font-weight: bold;
 }
-
+ 
 .right-col {
   flex: 1;
   min-width: 260px;
@@ -520,7 +517,7 @@ onMounted(async () => {
   flex-direction: column;
   gap: 16px;
 }
-
+ 
 .bulan-box,
 .budget-box,
 .goals-box {
@@ -529,7 +526,7 @@ onMounted(async () => {
   padding: 16px 18px;
   box-shadow: var(--shadow-soft);
 }
-
+ 
 .goals-box {
   display: block;
   text-decoration: none;
@@ -539,7 +536,7 @@ onMounted(async () => {
 .goals-box:hover {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
-
+ 
 .bulan-box h3,
 .budget-box h3,
 .goals-box h3 {
@@ -548,13 +545,13 @@ onMounted(async () => {
   color: var(--color-primary-dark);
   margin-bottom: 6px;
 }
-
+ 
 .periode {
   font-size: 0.85rem;
   color: #666;
   margin-bottom: 10px;
 }
-
+ 
 .bulan-row {
   display: flex;
   justify-content: space-between;
@@ -573,7 +570,7 @@ onMounted(async () => {
 .bulan-row .keluar {
   color: var(--color-danger);
 }
-
+ 
 .budget-head {
   display: flex;
   justify-content: space-between;
@@ -583,7 +580,7 @@ onMounted(async () => {
 .budget-head h3 {
   margin-bottom: 0;
 }
-
+ 
 .budget-progress {
   height: 10px;
   border-radius: 6px;
@@ -605,7 +602,7 @@ onMounted(async () => {
 .budget-progress-bar.bg-danger {
   background: var(--color-danger);
 }
-
+ 
 .budget-angka {
   display: flex;
   justify-content: space-between;
@@ -619,7 +616,7 @@ onMounted(async () => {
 .budget-angka .total {
   color: #94a3b8;
 }
-
+ 
 .budget-warning {
   margin-top: 10px;
   border-radius: 8px;
@@ -636,7 +633,7 @@ onMounted(async () => {
   font-size: 0.76rem;
   margin-top: 2px;
 }
-
+ 
 .goal-item {
   font-size: 0.92rem;
   padding: 4px 0;
@@ -645,27 +642,27 @@ onMounted(async () => {
 .goal-item:last-child {
   border-bottom: none;
 }
-
+ 
 .empty-note {
   color: #888;
   font-size: 0.88rem;
   padding: 10px 0;
   text-align: center;
 }
-
+ 
 .skeleton-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
+ 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
 }
-
+ 
 @media (max-width: 768px) {
   .notif-banner {
     flex-direction: column;

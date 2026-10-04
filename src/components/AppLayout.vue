@@ -151,6 +151,7 @@ async function handleLogout() {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  background-color: #0799d3be;
 }
 
 /* Penyesuaian Tampilan Mobile */
