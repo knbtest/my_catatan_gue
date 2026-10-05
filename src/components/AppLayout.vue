@@ -4,18 +4,18 @@
     <!-- Navbar mobile -->
     <nav class="mobile-nav">
       <div class="mobile-nav-top">
-        <span class="brand">Catatan Keuangan</span>
-        <button class="burger" @click="menuOpen = !menuOpen" aria-label="Buka menu">
-          <span></span><span></span><span></span>
-        </button>
+        <span class="brand" style="text-align: center;">Catatan Keuangan</span>
+        <button class="burger" @click="menuOpen = !menuOpen" aria-label="Buka menu"><span></span><span></span><span></span></button>
       </div>
       <div v-show="menuOpen" class="mobile-nav-menu">
         <RouterLink to="/dashboard" @click="menuOpen = false">Beranda</RouterLink>
         <RouterLink to="/catatan" @click="menuOpen = false">Catatan Transaksi</RouterLink>
         <RouterLink to="/aktivitas" @click="menuOpen = false">Aktivitas</RouterLink>
-        <a href="/logout" class="logout" @click.prevent="handleLogout">Logout</a>
+        <a href="/logout" class="logout" @click.prevent="confirmLogout">Logout</a>
         <div class="version-footer mobile">
-          <div>{{ config.appName }} <strong>{{ config.version }}</strong> &bull; &copy; {{ config.year }} {{ config.developer }}</div>
+          <div>
+            {{ config.appName }} <strong>{{ config.version }}</strong> &bull; &copy; {{ config.year }} {{ config.developer }}
+          </div>
         </div>
       </div>
     </nav>
@@ -23,16 +23,17 @@
     <!-- Sidebar desktop -->
     <aside class="sidebar">
       <div>
-        <div class="brand">Catatan Keuangan</div>
+        <div class="brand" style="text-align: center;">Catatan Keuangan</div>
         <nav>
           <RouterLink to="/dashboard">Beranda</RouterLink>
           <RouterLink to="/catatan">Catatan Transaksi</RouterLink>
           <RouterLink to="/aktivitas">Aktivitas</RouterLink>
-          <a href="/logout" class="logout" @click.prevent="handleLogout">Logout</a>
+          <a href="/logout" class="logout" @click.prevent="confirmLogout">Logout</a>
         </nav>
       </div>
       <div class="version-footer desktop">
-        <strong>{{ config.appName }} {{ config.version }}</strong><br />
+        <strong>{{ config.appName }} {{ config.version }}</strong
+        ><br />
         Dikembangkan oleh {{ config.developer }}<br />
         &copy; {{ config.year }} All Rights Reserved
       </div>
@@ -42,22 +43,42 @@
     <main class="main">
       <slot />
     </main>
+
+    <!-- Modal Konfirmasi Logout -->
+    <div v-if="showLogoutModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>Konfirmasi Logout</h3>
+        <p>Apakah kamu yakin ingin keluar dari aplikasi?</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="showLogoutModal = false">Batal</button>
+          <button class="btn-confirm" @click="executeLogout">Ya, Logout</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '../composables/useAuth'
-import { APP_CONFIG as config } from '../config'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
+import { APP_CONFIG as config } from "../config";
 
-const router = useRouter()
-const { logout } = useAuth()
-const menuOpen = ref(false)
+const router = useRouter();
+const { logout } = useAuth();
+const menuOpen = ref(false);
+const showLogoutModal = ref(false);
 
-async function handleLogout() {
-  await logout()
-  router.push('/')
+// Dipanggil saat tombol logout diklik (membuka modal)
+function confirmLogout() {
+  menuOpen.value = false; // Tutup menu mobile jika terbuka
+  showLogoutModal.value = true;
+}
+
+// Eksekusi proses logout yang sebenarnya
+async function executeLogout() {
+  await logout();
+  router.push("/");
 }
 </script>
 
@@ -67,6 +88,7 @@ async function handleLogout() {
   display: flex;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 .brand {
@@ -79,7 +101,7 @@ async function handleLogout() {
 .sidebar {
   width: 205px;
   height: 100%;
-  background: #fff;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -128,12 +150,13 @@ async function handleLogout() {
 }
 
 .version-footer.desktop {
-  padding: 14px 16px 0;
-  font-size: 0.72rem;
+  padding: 12px 4px 0;
+  font-size: 0.68rem;
   color: #8a8a8a;
-  line-height: 1.4;
+  line-height: 1.3;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   text-align: center;
+  /* white-space: nowrap; */
 }
 
 /* --- Mobile nav --- */
@@ -151,7 +174,91 @@ async function handleLogout() {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-  background-color: #0799d3be;
+  background-color: #767b7cc2;
+}
+
+/* --- Modal Styling --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+.modal-box {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  animation: modalPop 0.2s ease-in-out;
+}
+
+.modal-box h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #333;
+}
+
+.modal-box p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.btn-cancel {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.btn-cancel:hover {
+  background: #cbd5e1;
+}
+
+.btn-confirm {
+  background: #e02b4d;
+  color: #fff;
+}
+
+.btn-confirm:hover {
+  background: #c52241;
+}
+
+@keyframes modalPop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Penyesuaian Tampilan Mobile */

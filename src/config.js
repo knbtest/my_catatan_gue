@@ -1,13 +1,30 @@
 // src/config.js
 export const APP_CONFIG = {
   appName: "Catatan Keuangan",
-  version: "v2.3",
-  releaseDate: "4 Okt 2026",
+  version: "v2.4",
+  releaseDate: "5 Okt 2026",
   developer: "Zaki Nur Faizi",
   year: "2026",
 
   // Riwayat Pembaruan / Changelog Aplikasi
   changelog: [
+    {
+      version: "v2.4",
+      date: "5 Oktober 2026",
+      features: [
+        "Menambahkan batasan waktu 10 menit untuk mengedit atau menghapus transaksi, demi menjaga keakuratan catatan keuangan",
+        "Sinkronisasi otomatis saldo Sumber Dana: setiap kali transaksi diedit atau dihapus, saldo di dompet/bank terkait akan langsung menyesuaikan secara akurat",
+        "Menambahkan Pop Up untuk logout",
+        "Mengganti warna di card transaksidi halaman aktivitas menjadi warna biru muda",
+      ],
+      bugs: [
+        "Memperbaiki bug di mana saldo sumber dana tidak ikut berubah saat transaksi diedit atau dihapus",
+        "Memperketat keamanan penghapusan data transaksi dan reset saldo untuk user tertentu agar berjalan lebih stabil",
+        "Pembaruan struktur fungsi keamanan database untuk memastikan data transaksi dan saldo berjalan selaras tanpa merusak tabel yang ada",
+        "Memperbaharui stuktur tabel dan menambahkan waktu fitur 10 menit.",
+        "Memperbaiki bug yang sudah register untuk redirect ke halaman dashboard",
+      ],
+    },
     {
       version: "v2.3",
       date: "4 Oktober 2026",

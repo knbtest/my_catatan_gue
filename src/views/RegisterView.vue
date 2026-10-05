@@ -62,12 +62,14 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router' // 1. Import router
 import { useAuth } from '../composables/useAuth'
 import { terjemahkanErrorAuth } from '../utils/format'
 import { APP_CONFIG as config } from '../config'
 import BaseSpinner from '../components/BaseSpinner.vue'
 
 const { register } = useAuth()
+const router = useRouter() // 2. Inisialisasi router
 
 const email = ref('')
 const password = ref('')
@@ -98,11 +100,21 @@ async function handleSubmit() {
     return
   }
 
+  // KONDISI A: Jika butuh verifikasi email (ada user tapi tidak ada session)
   if (data.user && !data.session) {
-    successMsg.value = 'Pendaftaran berhasil! Silakan cek email kamu untuk konfirmasi sebelum login.'
+    successMsg.value = 'Pendaftaran berhasil! Silakan cek email kamu untuk melakukan konfirmasi sebelum login.'
     email.value = ''
     password.value = ''
     passwordConfirm.value = ''
+    return
+  }
+
+  // KONDISI B: Jika otomatis login / verifikasi email dimatikan (langsung dapat session)
+  if (data.session) {
+    successMsg.value = 'Pendaftaran berhasil! Mengalihkan ke dashboard...'
+    setTimeout(() => {
+      router.push('/dashboard') // Ganti dengan path rute dashboard Anda
+    }, 1500)
   }
 }
 </script>
