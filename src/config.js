@@ -23,6 +23,8 @@ export const APP_CONFIG = {
         "Pembaruan struktur fungsi keamanan database untuk memastikan data transaksi dan saldo berjalan selaras tanpa merusak tabel yang ada",
         "Memperbaharui stuktur tabel dan menambahkan waktu fitur 10 menit.",
         "Memperbaiki bug yang sudah register untuk redirect ke halaman dashboard",
+        "Memperbaiki tampilan di halaman aktivitas yaitu card nya",
+        "Memvalidasi daftar register untuk orang & wajib untuk memakai gmail.com",
       ],
     },
     {

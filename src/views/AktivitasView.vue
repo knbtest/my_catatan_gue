@@ -331,7 +331,10 @@ onUnmounted(() => {
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
+  overflow: visible;
+  height: calc(100vh - 160px);
   min-height: 0;
+  overflow: hidden;
 }
 
 .card-head {
@@ -361,6 +364,8 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 8px;
   flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .aktivitas-item {

@@ -26,11 +26,11 @@
         <form @submit.prevent="handleSubmit">
           <div class="field">
             <label>Email</label>
-            <input v-model="email" type="email" required autocomplete="email" />
+            <input v-model="email" placeholder="user@gmail.com" type="email" required autocomplete="email" />
           </div>
           <div class="field">
             <label>Password</label>
-            <input v-model="password" type="password" required minlength="6" autocomplete="current-password" />
+            <input v-model="password" type="password" placeholder="********" required minlength="6" autocomplete="current-password" />
           </div>
           <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
             <BaseSpinner v-if="isLoading" />

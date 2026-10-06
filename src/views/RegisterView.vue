@@ -20,7 +20,7 @@
 
       <div class="auth-form-panel">
         <div class="auth-brand">Buat Akun Baru </div>
-        <div class="auth-sub">Isi data di bawah untuk mendaftar</div>
+        <div class="auth-sub">Isi data di bawah untuk mendaftar (Wajib Gmail)</div>
 
         <div v-if="errorMsg" class="alert-box error">{{ errorMsg }}</div>
         <div v-if="successMsg" class="alert-box success">{{ successMsg }}</div>
@@ -28,15 +28,15 @@
         <form @submit.prevent="handleSubmit">
           <div class="field">
             <label>Email</label>
-            <input v-model="email" type="email" required autocomplete="email" />
+            <input v-model="email" type="email" placeholder="contoh@gmail.com" required autocomplete="email" />
           </div>
           <div class="field">
             <label>Password</label>
-            <input v-model="password" type="password" required minlength="6" autocomplete="new-password" />
+            <input v-model="password" type="password" required minlength="8" placeholder="Minimal 8 Karakter" autocomplete="new-password" />
           </div>
           <div class="field">
             <label>Konfirmasi Password</label>
-            <input v-model="passwordConfirm" type="password" required minlength="6" autocomplete="new-password" />
+            <input v-model="passwordConfirm" type="password" required minlength="8" placeholder="Konfirmasi Password" autocomplete="new-password" />
           </div>
           <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
             <BaseSpinner v-if="isLoading" />
@@ -62,14 +62,14 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router' // 1. Import router
+import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { terjemahkanErrorAuth } from '../utils/format'
 import { APP_CONFIG as config } from '../config'
 import BaseSpinner from '../components/BaseSpinner.vue'
 
 const { register } = useAuth()
-const router = useRouter() // 2. Inisialisasi router
+const router = useRouter()
 
 const email = ref('')
 const password = ref('')
@@ -82,17 +82,28 @@ async function handleSubmit() {
   errorMsg.value = ''
   successMsg.value = ''
 
+  const cleanEmail = email.value.trim().toLowerCase()
+
+  // 1. Validasi Ketat: Wajib berakhiran @gmail.com
+  if (!cleanEmail.endsWith('@gmail.com')) {
+    errorMsg.value = 'Pendaftaran wajib menggunakan akun Gmail yang valid (berakhiran @gmail.com).'
+    return
+  }
+
+  // 2. Validasi Password Cocok
   if (password.value !== passwordConfirm.value) {
     errorMsg.value = 'Konfirmasi password tidak cocok.'
     return
   }
+  
+  // 3. Validasi Panjang Password
   if (password.value.length < 6) {
     errorMsg.value = 'Password minimal 6 karakter.'
     return
   }
 
   isLoading.value = true
-  const { data, error } = await register(email.value.trim(), password.value)
+  const { data, error } = await register(cleanEmail, password.value)
   isLoading.value = false
 
   if (error) {
@@ -100,7 +111,7 @@ async function handleSubmit() {
     return
   }
 
-  // KONDISI A: Jika butuh verifikasi email (ada user tapi tidak ada session)
+  // KONDISI A: Jika butuh verifikasi email
   if (data.user && !data.session) {
     successMsg.value = 'Pendaftaran berhasil! Silakan cek email kamu untuk melakukan konfirmasi sebelum login.'
     email.value = ''
@@ -109,17 +120,18 @@ async function handleSubmit() {
     return
   }
 
-  // KONDISI B: Jika otomatis login / verifikasi email dimatikan (langsung dapat session)
+  // KONDISI B: Jika otomatis login langsung dapat session
   if (data.session) {
     successMsg.value = 'Pendaftaran berhasil! Mengalihkan ke dashboard...'
     setTimeout(() => {
-      router.push('/dashboard') // Ganti dengan path rute dashboard Anda
+      router.push('/dashboard')
     }, 1500)
   }
 }
 </script>
 
 <style scoped>
+/* Style tetap sama seperti sebelumnya */
 .auth-page {
   min-height: 100vh;
   display: flex;
